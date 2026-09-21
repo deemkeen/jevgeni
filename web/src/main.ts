@@ -1,3 +1,4 @@
+import { inject } from "@vercel/analytics";
 import { fetchStatus, postCall, postInterpret, type SpendLedger, type VoiceEvent } from "./api";
 import { openMic, type Mic } from "./audio/mic";
 import { DEFAULT_VAD, Vad, type Utterance } from "./audio/vad";
@@ -8,6 +9,10 @@ import { renderClaw } from "./rig/claw";
 import { renderFly } from "./rig/fly";
 import { createSim, decodeLog, encodeLog, resolve, snapshot, step, TICK_MS } from "./sim/sim";
 import type { CallEvent, Decision, InputLog, SimState } from "./sim/types";
+
+// Vercel Web Analytics: page views only, no cookies, no personal data.
+// Sends nothing on localhost (the script detects the environment).
+inject();
 
 // ---------------------------------------------------------------------------
 // DOM
