@@ -270,6 +270,16 @@ h1 em {
   line-height: 1;
 }
 
+body.won .caption {
+  color: var(--green);
+  font-size: 22px;
+}
+body.lost .caption {
+  color: var(--red);
+}
+body.won .mic {
+  border-color: var(--green);
+}
 /* meters: one row */
 .meters {
   display: grid;

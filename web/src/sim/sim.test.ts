@@ -60,6 +60,26 @@ test("a loud call startles and the claw flinches first", () => {
   s = step(s, { type: "call", t: 0, text: "left", loud: false, decision: decision("left") });
   assert.equal(s.fly.mood, "startled");
   assert.match(s.lastAction ?? "", /flinched/);
+  assert.ok(s.claw.viaX != null && s.claw.viaX > s.claw.x, "detour goes the wrong way first");
+  const startX = s.claw.x;
+  s = step(s, { type: "tick", dt: TICK_MS });
+  assert.ok(s.claw.x > startX, "the claw drives, it does not teleport");
+});
+
+test("three dung win the round early, timeout without them is a loss", () => {
+  let s = createSim(1337, 10);
+  for (let n = 0; n < 3; n++) {
+    const dung = s.items.find(i => i.kind === "dung")!;
+    s.claw.x = dung.x; s.claw.targetX = dung.x;
+    s = step(s, { type: "call", t: s.t, text: "down", loud: false, decision: decision("down") });
+    for (let i = 0; i < 25; i++) s = step(s, { type: "tick", dt: TICK_MS });
+  }
+  assert.equal(s.score.dung, 3);
+  assert.equal(s.over, true);
+  assert.equal(s.result, "win");
+  assert.equal(s.fly.mood, "victory");
+  const loss = replay({ seed: 1, roundSeconds: 5, calls: [] });
+  assert.equal(loss.result, "loss");
 });
 
 test("a grab over dung scores", () => {

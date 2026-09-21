@@ -6,10 +6,10 @@ import type { SimState } from "../sim/types";
 export function renderFly(svg: SVGSVGElement, s: SimState, tMs: number) {
   const mood = s.fly.mood;
   const led =
-    mood === "static" ? "#e06c5a" : mood === "startled" ? "#e8b04a" : mood === "tempted" || mood === "yum" ? "#e06c5a" : "#7ee08a";
-  const buzz = mood === "startled" || mood === "tempted" || s.claw.phase === "moving";
+    mood === "static" || mood === "defeat" ? "#e06c5a" : mood === "startled" ? "#e8b04a" : mood === "tempted" || mood === "yum" ? "#e06c5a" : "#7ee08a";
+  const buzz = mood === "startled" || mood === "tempted" || mood === "victory" || s.claw.phase === "moving";
   const wing = buzz ? Math.sin(tMs / 18) * 10 : Math.sin(tMs / 900) * 1.5;
-  const hop = mood === "win" ? Math.abs(Math.sin(tMs / 160)) * -6 : 0;
+  const hop = mood === "win" ? Math.abs(Math.sin(tMs / 160)) * -6 : mood === "victory" ? Math.abs(Math.sin(tMs / 130)) * -10 : mood === "defeat" ? 4 : 0;
   const shake = mood === "startled" ? Math.sin(tMs / 25) * 2 : 0;
   const stick = s.claw.phase === "moving" ? (s.claw.targetX < s.claw.x ? -14 : 14) : s.claw.phase === "descending" ? 0 : 0;
   const pressed = s.claw.phase === "descending" || s.claw.phase === "grabbing";

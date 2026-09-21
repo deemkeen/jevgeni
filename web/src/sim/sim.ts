@@ -71,7 +71,9 @@ export function createSim(seed: number, roundSeconds = 90): SimState {
     roundSeconds,
     t: 0,
     over: false,
-    claw: { x: ANTENNA_X, y: 0, phase: "idle", phaseT: 0, targetX: ANTENNA_X, holding: null, autoGrab: false },
+    claw: { x: ANTENNA_X, y: 0, phase: "idle", phaseT: 0, targetX: ANTENNA_X, holding: null, autoGrab: false, viaX: null },
+    goal: 3,
+    result: null,
     items: [],
     nextItemId: 1,
     fly: { signal: 1, hunger: 0.2, startle: 0, mood: "idle" },
@@ -121,6 +123,9 @@ function tick(s: SimState, dt: number) {
   if (s.t >= s.roundSeconds * 1000) {
     s.t = s.roundSeconds * 1000;
     s.over = true;
+    s.result = s.score.dung >= s.goal ? "win" : "loss";
+    s.fly.mood = s.result === "win" ? "victory" : "defeat";
+    return;
   }
   const dts = dt / 1000;
   s.fly.hunger = clamp(s.fly.hunger + (HUNGER_AT_END / s.roundSeconds) * dts * 0.8);
@@ -129,12 +134,18 @@ function tick(s: SimState, dt: number) {
   const c = s.claw;
   switch (c.phase) {
     case "moving": {
-      const dir = Math.sign(c.targetX - c.x);
-      const maxMove = MOVE_SPEED * dts;
-      if (Math.abs(c.targetX - c.x) <= maxMove) {
-        c.x = c.targetX;
-        c.phase = c.autoGrab ? "descending" : "idle";
-        c.phaseT = 0;
+      // a flinch drives to viaX first, then on to the real target
+      const goal = c.viaX ?? c.targetX;
+      const dir = Math.sign(goal - c.x);
+      const maxMove = MOVE_SPEED * dts * (c.viaX != null ? 1.6 : 1);
+      if (Math.abs(goal - c.x) <= maxMove) {
+        c.x = goal;
+        if (c.viaX != null) {
+          c.viaX = null;
+        } else {
+          c.phase = c.autoGrab ? "descending" : "idle";
+          c.phaseT = 0;
+        }
       } else {
         c.x += dir * maxMove;
       }
@@ -192,6 +203,13 @@ function settle(s: SimState) {
     s.fly.hunger = clamp(s.fly.hunger - 0.1);
     s.fly.mood = "win";
     s.lastAction = "💩 retrieved";
+    if (s.score.dung >= s.goal) {
+      s.over = true;
+      s.result = "win";
+      s.fly.mood = "victory";
+      s.lastAction = `💩 ×${s.goal} — round won`;
+      return;
+    }
   } else {
     s.score.wrong += 1;
     s.fly.hunger = clamp(s.fly.hunger - 0.35);
@@ -279,6 +297,7 @@ function resolveCall(s: SimState, ev: CallEvent) {
     c.targetX = r.target.x;
     c.phase = "moving";
     c.autoGrab = true;
+    c.viaX = null;
     s.fly.mood = "tempted";
     s.lastAction = `ignored you, went for the ${r.target.kind}`;
     return;
@@ -289,7 +308,7 @@ function resolveCall(s: SimState, ev: CallEvent) {
   if (r.jerked && !busy && (r.command === "left" || r.command === "right")) {
     const wrong = neighbour(s, r.command === "left" ? 1 : -1, 1);
     if (wrong) {
-      c.x = wrong.x;
+      c.viaX = wrong.x;
       jerkNote = " (flinched first)";
     }
   }
@@ -307,6 +326,7 @@ function resolveCall(s: SimState, ev: CallEvent) {
       c.targetX = target.x;
       c.phase = "moving";
       c.autoGrab = false;
+      if (!r.jerked) c.viaX = null;
       break;
     }
     case "forward":

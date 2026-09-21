@@ -3,7 +3,7 @@
 // lower so it reads as "bz bz"), through a lowpass. Every mood is a short
 // phrase of pitch/gain envelopes on the same voice.
 
-export type BuzzKind = "obeys" | "tempted" | "startled" | "win" | "yum" | "miss" | "static" | "hello";
+export type BuzzKind = "obeys" | "tempted" | "startled" | "win" | "yum" | "miss" | "static" | "hello" | "victory" | "defeat";
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
@@ -64,6 +64,22 @@ const PHRASES: Record<BuzzKind, Segment[]> = {
   yum: [{ f: 180, d: 0.14, beat: 12, to: 200 }, { f: 0, d: 0.05 }, { f: 170, d: 0.14, beat: 12, to: 190 }, { f: 0, d: 0.05 }, { f: 160, d: 0.2, beat: 10, to: 140 }],
   // deflating "bzzuh"
   miss: [{ f: 230, d: 0.3, beat: 24, to: 110, g: 0.7 }],
+  // fanfare: a rising arpeggio with a long held top note and a wing flourish
+  victory: [
+    { f: 220, d: 0.1, beat: 30 }, { f: 0, d: 0.03 },
+    { f: 277, d: 0.1, beat: 32 }, { f: 0, d: 0.03 },
+    { f: 330, d: 0.1, beat: 34 }, { f: 0, d: 0.03 },
+    { f: 440, d: 0.36, beat: 40, g: 1 }, { f: 0, d: 0.05 },
+    { f: 392, d: 0.09, beat: 38 }, { f: 0, d: 0.03 },
+    { f: 440, d: 0.09, beat: 40 }, { f: 0, d: 0.03 },
+    { f: 523, d: 0.5, beat: 46, to: 560, g: 1 },
+  ],
+  // sad slide down, wings giving up
+  defeat: [
+    { f: 260, d: 0.3, beat: 24, to: 200, g: 0.8 }, { f: 0, d: 0.05 },
+    { f: 200, d: 0.3, beat: 18, to: 150 }, { f: 0, d: 0.05 },
+    { f: 150, d: 0.6, beat: 10, to: 80, g: 0.7 },
+  ],
   // barely anything: a faint questioning tick
   static: [{ f: 260, d: 0.05, beat: 50, g: 0.35 }, { f: 0, d: 0.08 }, { f: 260, d: 0.05, beat: 50, g: 0.35 }],
 };

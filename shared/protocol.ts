@@ -65,7 +65,12 @@ export interface SimState {
     holding: Item | null;
     /** the fly is going for a temptation: grab as soon as the claw arrives */
     autoGrab: boolean;
+    /** flinch detour: drive here first, then on to targetX */
+    viaX: number | null;
   };
+  /** how many 💩 end the round as a win */
+  goal: number;
+  result: "win" | "loss" | null;
   items: Item[];
   nextItemId: number;
   fly: { signal: number; hunger: number; startle: number; mood: string };

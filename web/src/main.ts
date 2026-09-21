@@ -84,7 +84,7 @@ function soundHooks() {
   if (sim.fly.mood !== lastMood) {
     lastMood = sim.fly.mood;
     const k = lastMood as BuzzKind;
-    if (["obeys", "tempted", "startled", "win", "yum", "miss", "static"].includes(k)) buzz(k);
+    if (["obeys", "tempted", "startled", "win", "yum", "miss", "static", "victory", "defeat"].includes(k)) buzz(k);
   }
   if (sim.claw.phase !== lastPhase) {
     const from = lastPhase;
@@ -101,7 +101,7 @@ function render(now: number) {
   soundHooks();
   renderClaw(pitSvg, sim, camClock(sim.t));
   renderFly(flySvg, sim, now);
-  $("score").textContent = String(sim.score.dung);
+  $("score").textContent = `${sim.score.dung}/${sim.goal}`;
   const left = Math.max(0, Math.ceil((sim.roundSeconds * 1000 - sim.t) / 1000));
   $("clock").textContent = String(left);
   meter("signal", sim.fly.signal);
@@ -110,11 +110,15 @@ function render(now: number) {
   $("seed-label").textContent = String(sim.seed);
   $("inputs-label").textContent = String(replayLog ? replayLog.calls.length : inputLog.calls.length);
   if (sim.over && !micBtn.classList.contains("over")) {
-    $("caption").textContent = `Round over. ${sim.score.dung} 💩 retrieved, ${sim.score.wrong} snacks eaten.`;
+    const won = sim.result === "win";
+    $("caption").textContent = won
+      ? `💩💩💩 in ${Math.round(sim.t / 1000)} s. Good fly!`
+      : `Time's up. ${sim.score.dung} of ${sim.goal} 💩, ${sim.score.wrong} snacks eaten.`;
     if (mic) stopMic();
     micBtn.classList.add("over");
     micIcon.textContent = "↺";
-    setStatus("", "ROUND OVER · TAP FOR ANOTHER");
+    document.body.classList.add(won ? "won" : "lost");
+    setStatus(won ? "live" : "busy", won ? "ROUND WON · TAP FOR ANOTHER" : "ROUND LOST · TAP FOR ANOTHER");
   }
 }
 
@@ -164,7 +168,7 @@ function captionFor(s: SimState): string {
     case "obeys":
       return `Command taken: ${s.lastAction}.`;
     case "win":
-      return "💩! Good fly.";
+      return `💩! ${sim.goal - sim.score.dung} to go.`;
     case "yum":
       return "She ate it. Hunger down, dignity too.";
     case "miss":
@@ -373,7 +377,14 @@ micBtn.addEventListener("click", async () => {
   }
 });
 
+let voiceCalibrated = false;
 function onUtterance(u: Utterance, sampleRate: number) {
+  // the first call sets what "your normal voice" means; shouting is judged against it
+  if (!voiceCalibrated && vad) {
+    vad.setVoice(u.peakDb);
+    voiceCalibrated = true;
+    u.loud = false;
+  }
   const wav = encodeWav(u.frames, sampleRate);
   setStatus("busy", `HEARD ${Math.round(u.speechMs)} ms${u.loud ? " · SHOUT" : ""} · SENDING ${(wav.size / 1024).toFixed(0)} kB`);
   void submit("wav", wav, u.loud, u.endedAt);
