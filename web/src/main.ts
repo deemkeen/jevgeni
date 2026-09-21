@@ -439,6 +439,7 @@ void fetchStatus()
     $("backends").textContent = locked ? "locked: open with ?token=…" : "server unreachable";
     if (locked) setStatus("busy", "LOCKED · OPEN THE LINK WITH ?token=…");
     micBtn.disabled = locked;
+    micBtn.disabled = locked;
   });
 
 // pause the round while the tab is hidden, so hunger doesn't run away
