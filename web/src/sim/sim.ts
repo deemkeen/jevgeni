@@ -17,7 +17,6 @@ import type {
 
 export const TICK_MS = 100;
 export const ANTENNA_X = 0.5;
-export const STEP = 0.12;
 export const GRAB_TOLERANCE = 0.055;
 export const MOVE_SPEED = 0.45; // pit widths per second
 export const DESCEND_MS = 900;
@@ -90,8 +89,7 @@ export function createSim(seed: number, roundSeconds = 90): SimState {
   const n = kinds.length;
   kinds.forEach((kind, i) => {
     const slot = (i + 0.5) / n;
-    const jitter = (rand(s) - 0.5) * 0.04;
-    s.items.push({ id: s.nextItemId++, kind, x: clamp(slot + jitter, 0.05, 0.95) });
+    s.items.push({ id: s.nextItemId++, kind, x: slot });
   });
   s.fly.signal = signalAt(s.claw.x);
   return s;
@@ -200,10 +198,9 @@ function settle(s: SimState) {
     s.fly.mood = "yum";
     s.lastAction = `ate the ${held.kind} instead`;
   }
-  // Respawn deterministically near where the item was.
+  // Respawn deterministically in the same slot, so the claw is still right above it.
   const kind = RESPAWN_KINDS[Math.floor(rand(s) * RESPAWN_KINDS.length)];
-  const x = clamp(held.x + (rand(s) - 0.5) * 0.08, 0.05, 0.95);
-  s.items.push({ id: s.nextItemId++, kind, x });
+  s.items.push({ id: s.nextItemId++, kind, x: held.x });
   s.items.sort((a, b) => a.x - b.x);
 }
 
@@ -248,6 +245,16 @@ export function resolve(s: SimState, ev: Omit<CallEvent, "type">): Resolution {
   return { strength, pull, winner, command, temptation: named, target, jerked };
 }
 
+/** The item `steps` slots to the left (-1) or right (+1) of the claw, clamped to the row. */
+function neighbour(s: SimState, dir: -1 | 1, steps: number): Item | null {
+  const xs = [...s.items].sort((a, b) => a.x - b.x);
+  if (!xs.length) return null;
+  const eps = 0.01;
+  const side = dir < 0 ? xs.filter((i) => i.x < s.claw.x - eps).reverse() : xs.filter((i) => i.x > s.claw.x + eps);
+  if (!side.length) return null;
+  return side[Math.min(steps, side.length) - 1];
+}
+
 function resolveCall(s: SimState, ev: CallEvent) {
   s.score.calls += 1;
   if (ev.loud) s.fly.startle = 1;
@@ -280,16 +287,24 @@ function resolveCall(s: SimState, ev: CallEvent) {
   // Command wins. A startled fly jerks the joystick the wrong way first.
   let jerkNote = "";
   if (r.jerked && !busy && (r.command === "left" || r.command === "right")) {
-    const wrong = r.command === "left" ? 1 : -1;
-    c.x = clamp(c.x + wrong * STEP * 0.5, 0.03, 0.97);
-    jerkNote = " (flinched first)";
+    const wrong = neighbour(s, r.command === "left" ? 1 : -1, 1);
+    if (wrong) {
+      c.x = wrong.x;
+      jerkNote = " (flinched first)";
+    }
   }
   switch (r.command) {
     case "left":
     case "right": {
       if (busy) break;
-      const dir = r.command === "left" ? -1 : 1;
-      c.targetX = clamp(c.targetX + dir * STEP * urg, 0.03, 0.97);
+      // one item over; "now!" skips one, "calm" still moves one
+      const target = neighbour(s, r.command === "left" ? -1 : 1, urg > 1 ? 2 : 1);
+      if (!target) {
+        s.lastAction = `${r.command}: already at the edge`;
+        s.fly.mood = "miss";
+        return;
+      }
+      c.targetX = target.x;
       c.phase = "moving";
       c.autoGrab = false;
       break;
