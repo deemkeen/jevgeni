@@ -22,13 +22,13 @@ cp .env.example .env    # add GROQ_API_KEY and OPENROUTER_API_KEY (or TYPESAFE_A
 npm run dev             # server on :8787, vite on :5173
 ```
 
-Open http://localhost:5173. Without keys the server runs a deterministic mock for Jev and typed calls only, so the whole thing works offline.
+Open http://localhost:5173, tap the mic, stay quiet 1.5 s for calibration, then shout. Without keys the server runs a deterministic mock for Jev; without `GROQ_API_KEY` the mic path cannot work. For testing without a microphone, `say("JevGeni, left!")` in the browser console runs a typed call through the same pipeline (`POST /api/interpret`).
 
 Production: `npm run build && npm start` serves `web/dist` from the Node server.
 
 ## The loop
 
-1. You call, by mic or typed. The pause cutter (`web/src/audio/vad.ts`) cuts the utterance, measures loudness against your calibrated voice, encodes 16 kHz WAV.
+1. You call. Control is voice only: one mic button, nothing else. The pause cutter (`web/src/audio/vad.ts`) cuts the utterance, measures loudness against your calibrated voice, encodes 16 kHz WAV.
 2. **Heard.** `POST /api/call` sends the WAV to Groq Whisper. The transcript comes back as an NDJSON event with its latency.
 3. **Understood.** `server/src/jev/questions.ts` asks Jev three things about the call and the board:
    - `command` (choice): left, right, forward, back, down, up, grab, wait, none, unclear

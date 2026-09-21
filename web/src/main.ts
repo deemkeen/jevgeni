@@ -18,8 +18,8 @@ const bubble = $("bubble");
 const bubbleIdle = $("bubble-idle");
 const bubbleOpts = $("bubble-opts");
 const logBody = $("log");
-const callText = $<HTMLInputElement>("calltext");
-const loudBox = $<HTMLInputElement>("loud");
+const micLabel = $("mic-label");
+const micIcon = $("mic-icon");
 const seedInput = $<HTMLInputElement>("seed");
 const langSel = $<HTMLSelectElement>("lang");
 const micBtn = $<HTMLButtonElement>("micbtn");
@@ -83,10 +83,12 @@ function render(now: number) {
   meter("startle", sim.fly.startle);
   $("seed-label").textContent = String(sim.seed);
   $("inputs-label").textContent = String(replayLog ? replayLog.calls.length : inputLog.calls.length);
-  if (sim.over) {
+  if (sim.over && !micBtn.classList.contains("over")) {
     $("caption").textContent = `Round over. ${sim.score.dung} 💩 retrieved, ${sim.score.wrong} snacks eaten.`;
-    status.textContent = "ROUND OVER · ↺ FOR ANOTHER";
-    status.className = "status";
+    if (mic) stopMic();
+    micBtn.classList.add("over");
+    micIcon.textContent = "↺";
+    setStatus("", "ROUND OVER · TAP FOR ANOTHER");
   }
 }
 
@@ -260,13 +262,16 @@ async function submit(kind: "typed" | "wav", payload: string | Blob, loud: boole
   } finally {
     inFlight--;
     updateSpend();
-    if (inFlight === 0) setStatus(mic ? "live" : "", mic ? "IMPLANT LIVE · LISTENING" : "IMPLANT IDLE · TAP MIC OR TYPE");
+    if (inFlight === 0 && !sim.over) setStatus(mic ? "live" : "", mic ? "IMPLANT LIVE · LISTENING" : "IMPLANT IDLE · TAP THE MIC");
   }
 }
 
 function setStatus(cls: string, text: string) {
   status.className = `status ${cls}`;
   status.textContent = text;
+  micLabel.className = `mic-label ${cls}`;
+  micLabel.textContent = text.toLowerCase();
+  micBtn.classList.toggle("busy", cls === "busy");
 }
 
 function updateSpend() {
@@ -276,37 +281,28 @@ function updateSpend() {
 }
 
 // ---------------------------------------------------------------------------
-// Typed input
-
-$("callform").addEventListener("submit", (e) => {
-  e.preventDefault();
-  const text = callText.value.trim();
-  if (!text) return;
-  void submit("typed", text, loudBox.checked, performance.now());
-  callText.value = "";
-});
-
-$("chips").addEventListener("click", (e) => {
-  const b = (e.target as HTMLElement).closest("button[data-call]") as HTMLButtonElement | null;
-  if (!b) return;
-  void submit("typed", b.dataset.call!, loudBox.checked, performance.now());
-});
-
-// ---------------------------------------------------------------------------
 // Microphone
 
 let mic: Mic | null = null;
 let vad: Vad | null = null;
 let calibrating: number[] | null = null;
 
+function stopMic() {
+  mic?.stop();
+  mic = null;
+  vad = null;
+  micBtn.classList.remove("live", "shout");
+  micBtn.style.setProperty("--level", "0");
+  setStatus("", "IMPLANT IDLE · TAP THE MIC");
+}
+
 micBtn.addEventListener("click", async () => {
+  if (sim.over) {
+    restart();
+    return;
+  }
   if (mic) {
-    mic.stop();
-    mic = null;
-    vad = null;
-    micBtn.classList.remove("live");
-    micBtn.textContent = "🎙";
-    setStatus("", "IMPLANT IDLE · TAP MIC OR TYPE");
+    stopMic();
     return;
   }
   try {
@@ -339,7 +335,6 @@ micBtn.addEventListener("click", async () => {
       },
     );
     micBtn.classList.add("live");
-    micBtn.textContent = "🎙";
     setStatus("live", "CALIBRATING · STAY QUIET 1.5 s");
   } catch (err) {
     addErrorRow("(mic)", String(err));
@@ -348,28 +343,26 @@ micBtn.addEventListener("click", async () => {
 
 function onUtterance(u: Utterance, sampleRate: number) {
   const wav = encodeWav(u.frames, sampleRate);
-  const loud = u.loud || loudBox.checked;
   setStatus("busy", `HEARD ${Math.round(u.speechMs)} ms${u.loud ? " · SHOUT" : ""} · SENDING ${(wav.size / 1024).toFixed(0)} kB`);
-  void submit("wav", wav, loud, u.endedAt);
+  void submit("wav", wav, u.loud, u.endedAt);
 }
 
 function levelMeter(db: number) {
   const pct = Math.max(0, Math.min(100, ((db + 70) / 60) * 100));
-  const fill = $("level-fill");
-  fill.style.width = `${pct}%`;
-  fill.classList.toggle("shout", vad != null && db >= (vad as unknown as { o: { voiceDb: number; shoutDb: number } }).o.voiceDb + 8);
-  $("level-db").textContent = `${Math.round(db)} dB`;
+  micBtn.style.setProperty("--level", pct.toFixed(0));
+  micBtn.classList.toggle("shout", vad != null && db >= vad.shoutThresholdDb());
 }
 
 // ---------------------------------------------------------------------------
 // Restart / seed / replay link
 
-$("restart").addEventListener("click", () => {
+function restart() {
   const u = new URL(location.href);
   u.searchParams.delete("log");
   u.searchParams.set("seed", seedInput.value || "1337");
   location.href = u.toString();
-});
+}
+$("restart").addEventListener("click", restart);
 seedInput.addEventListener("change", () => {
   seed = Number(seedInput.value) || 1337;
 });
@@ -408,7 +401,7 @@ void fetchStatus()
     $("backends").textContent = backendLabel;
     spend = s.spend;
     updateSpend();
-    if (s.stt !== "groq") micBtn.title = "GROQ_API_KEY not set on the server";
+    if (s.stt !== "groq") setStatus("busy", "NO GROQ_API_KEY ON THE SERVER · MIC WILL NOT WORK");
   })
   .catch(() => ($("backends").textContent = "server unreachable"));
 
@@ -417,3 +410,8 @@ document.addEventListener("visibilitychange", () => {
   running = !document.hidden;
   last = performance.now();
 });
+
+// Dev hook: `say("JevGeni, left!")` in the console runs a typed call through
+// the same pipeline, for testing without a microphone. Not part of the UI.
+(window as unknown as { say: (t: string, loud?: boolean) => void }).say = (t, loud = false) =>
+  void submit("typed", t, loud, performance.now());

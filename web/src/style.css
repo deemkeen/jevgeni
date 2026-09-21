@@ -62,6 +62,7 @@ select {
   align-items: baseline;
   gap: 10px;
   min-width: 0;
+  overflow: visible;
 }
 .tag {
   border: 1px solid var(--red);
@@ -76,10 +77,12 @@ h1 {
   font-weight: 500;
   font-size: 26px;
   margin: 0;
-  line-height: 1;
+  padding-left: 4px;
+  line-height: 1.1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 h1 em {
   font-weight: 400;
@@ -133,6 +136,7 @@ h1 em {
   max-height: 34dvh;
 }
 .status {
+  display: none; /* the mic label carries the status; the pit stays clean */
   position: absolute;
   left: 8px;
   top: 20px;
@@ -282,98 +286,98 @@ h1 em {
   color: var(--amber);
 }
 
-/* uplink */
-.callbar {
+/* uplink: one button, voice only */
+.uplink {
   display: flex;
-  gap: 6px;
-}
-.callbar .mic {
-  width: 48px;
-  flex: none;
-  font-size: 20px;
-  background: transparent;
-  border: 1px solid var(--ink-dim);
-  cursor: pointer;
-}
-.callbar .mic.live {
-  border-color: var(--green);
-  color: var(--green);
-  box-shadow: 0 0 0 2px rgba(126, 224, 138, 0.25);
-  animation: blink 1.4s infinite;
-}
-.callbar input[type="text"] {
-  flex: 1;
-  min-width: 0;
-  background: #0b0f0e;
-  border: 1px solid var(--ink-dim);
-  padding: 8px 10px;
-  font-size: 14px;
-}
-.callbar button,
-.chips button {
-  background: transparent;
-  border: 1px solid var(--ink-dim);
-  padding: 6px 10px;
-  cursor: pointer;
-}
-.callbar .primary {
-  background: var(--red);
-  border-color: var(--red);
-  color: #1a0d0a;
-  font-weight: 600;
-}
-.toggle {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  border: 1px solid var(--ink-dim);
-  padding: 0 8px;
-  cursor: pointer;
-  user-select: none;
-  font-size: 10px;
-}
-.toggle input {
-  margin: 0;
-}
-.toggle:has(input:checked) {
-  border-color: var(--amber);
-  color: var(--amber);
-}
-.chips {
-  display: flex;
-  gap: 6px;
-  margin-top: 6px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.chips button {
-  white-space: nowrap;
-  font-size: 11px;
-}
-.chips .ghost {
-  margin-left: auto;
-  color: var(--ink-dim);
-}
-.level {
-  display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 8px;
-  margin-top: 6px;
-  font-size: 9px;
+  padding: 6px 0 2px;
+}
+.mic {
+  --level: 0;
+  position: relative;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  border: 1px solid var(--ink-dim);
+  background: radial-gradient(circle at 50% 40%, #1a2320, #0b0f0e 70%);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: transform 0.15s ease, border-color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.mic:active {
+  transform: scale(0.94);
+}
+.mic .icon {
+  font-size: 34px;
+  line-height: 1;
+  filter: grayscale(1) brightness(1.4);
+  transition: filter 0.2s;
+}
+.mic .ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: conic-gradient(var(--green) calc(var(--level) * 1%), transparent 0);
+  -webkit-mask: radial-gradient(circle, transparent 66%, #000 67%);
+  mask: radial-gradient(circle, transparent 66%, #000 67%);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.mic.live {
+  border-color: var(--green);
+  box-shadow: 0 0 0 1px rgba(126, 224, 138, 0.25), 0 0 28px rgba(126, 224, 138, 0.18);
+}
+.mic.live .icon {
+  filter: none;
+}
+.mic.live .ring {
+  opacity: 1;
+}
+.mic.live::after {
+  content: "";
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  border: 1px solid var(--green);
+  opacity: 0;
+  animation: pulse 2.2s ease-out infinite;
+}
+@keyframes pulse {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+}
+.mic.shout .ring {
+  background: conic-gradient(var(--amber) calc(var(--level) * 1%), transparent 0);
+}
+.mic.busy {
+  border-color: var(--amber);
+}
+.mic.over .icon {
+  filter: none;
+}
+.mic-label {
+  font-size: 10px;
+  letter-spacing: 0.14em;
   color: var(--ink-dim);
+  text-transform: uppercase;
+  text-align: center;
+  min-height: 14px;
 }
-.level-bar {
-  flex: 1;
-  height: 4px;
-  border: 1px solid var(--line);
+.mic-label.live {
+  color: var(--green);
 }
-#level-fill {
-  height: 100%;
-  width: 0;
-  background: var(--green);
-}
-#level-fill.shout {
-  background: var(--amber);
+.mic-label.busy {
+  color: var(--amber);
 }
 
 /* log: last three rows */
@@ -472,6 +476,13 @@ h1 em {
 .lab a {
   color: var(--green);
 }
+.lab .ghost {
+  background: transparent;
+  border: 1px solid var(--ink-dim);
+  padding: 2px 8px;
+  cursor: pointer;
+  color: var(--ink-dim);
+}
 .badge {
   border: 1px solid var(--amber);
   color: var(--amber);
@@ -484,10 +495,12 @@ h1 em {
   margin: 8px 0 0;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 640px) {
   h1 em {
     display: none;
   }
+}
+@media (max-width: 480px) {
   .stats {
     gap: 10px;
   }
@@ -518,12 +531,6 @@ h1 em {
   .caption {
     font-size: 15px;
     max-width: 40%;
-  }
-  .toggle span {
-    display: none;
-  }
-  .toggle {
-    padding: 0 6px;
   }
   .log .u {
     display: none;

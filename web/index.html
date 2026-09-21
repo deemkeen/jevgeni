@@ -29,7 +29,7 @@
       <section class="apparatus">
         <div class="pit-wrap">
           <svg id="pit" class="pit" viewBox="0 0 1000 400" preserveAspectRatio="none" aria-label="claw machine"></svg>
-          <div class="status" id="implant-status">IMPLANT IDLE · TAP MIC OR TYPE</div>
+          <div class="status" id="implant-status">IMPLANT IDLE · TAP THE MIC</div>
         </div>
         <div class="bench">
           <svg id="fly" class="fly" viewBox="0 0 260 150" aria-label="JevGeni at the joystick"></svg>
@@ -63,20 +63,11 @@
       </section>
 
       <section class="uplink">
-        <form class="callbar" id="callform">
-          <button type="button" id="micbtn" class="mic" aria-label="microphone">🎙</button>
-          <input id="calltext" type="text" placeholder="“JevGeni, left, now!”" autocomplete="off" enterkeyhint="send" />
-          <label class="toggle" title="Mark this call as shouted"><input type="checkbox" id="loud" /><span>LOUD</span></label>
-          <button type="submit" class="primary" id="callbtn">CALL</button>
-        </form>
-        <div class="chips" id="chips">
-          <button data-call="JevGeni, left!">left!</button>
-          <button data-call="right!">right!</button>
-          <button data-call="down, now!">down, now!</button>
-          <button data-call="get the wine">get the wine</button>
-          <button type="button" id="restart" class="ghost">↺</button>
-        </div>
-        <div class="level"><div class="level-bar"><div id="level-fill"></div></div><span id="level-db"></span></div>
+        <button id="micbtn" class="mic" aria-label="microphone">
+          <span class="ring" id="level-ring"></span>
+          <span class="icon" id="mic-icon">🎙</span>
+        </button>
+        <div class="mic-label" id="mic-label">implant idle · tap the mic</div>
       </section>
 
       <section class="log">
@@ -98,6 +89,7 @@
           </label>
           <a id="replay-link" href="#" title="Opens a link that replays this exact run">REPLAY LINK</a>
           <span id="replay-badge" class="badge" hidden>REPLAYING</span>
+          <button type="button" id="restart" class="ghost">↺ RESTART</button>
         </div>
         <div class="lab-row">
           <span id="chain-label">SIMULATED CHAIN · SEED <b id="seed-label">1337</b> · <b id="inputs-label">0</b> INPUTS</span>

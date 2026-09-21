@@ -68,6 +68,9 @@ export class Vad {
   setVoice(db: number) {
     this.o.voiceDb = db;
   }
+  shoutThresholdDb() {
+    return this.o.voiceDb + this.o.shoutDb;
+  }
 
   push(frame: Float32Array) {
     const db = rmsDb(frame);
