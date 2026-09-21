@@ -1,0 +1,24 @@
+{
+  "name": "jevgeni",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "JevGeni — a fly brain at the claw machine. Tech demo for Jev + Whisper v3 Turbo.",
+  "scripts": {
+    "dev": "concurrently -k -n server,web -c green,yellow \"npm:dev:server\" \"npm:dev:web\"",
+    "dev:server": "tsx watch server/src/index.ts",
+    "dev:web": "vite --config web/vite.config.ts",
+    "build": "tsc -p server/tsconfig.json && vite build --config web/vite.config.ts",
+    "start": "node server/dist/server/src/index.js",
+    "test": "node --import tsx --test server/src/**/*.test.ts web/src/**/*.test.ts",
+    "typecheck": "tsc -p server/tsconfig.json --noEmit && tsc -p web/tsconfig.json --noEmit"
+  },
+  "engines": { "node": ">=20" },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "concurrently": "^9.1.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0"
+  }
+}

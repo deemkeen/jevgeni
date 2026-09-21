@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JevGeni</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;1,400&family=JetBrains+Mono:wght@400;600&family=Caveat:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <main class="sheet">
+      <header class="head">
+        <div class="head-line">
+          <span class="tag">EXPERIMENT 07</span>
+          <span class="meta">DROSOPHILA MELANOGASTER ♀ · THORACIC IMPLANT REV. 3 · WHISPER V3 TURBO → JEV</span>
+        </div>
+        <h1><span class="name">JevGeni</span> <span class="dash">—</span> <em>a fly brain at the claw machine</em></h1>
+        <div class="stat-row">
+          <span class="scrawl">do NOT feed the specimen!!</span>
+          <div class="stat">
+            <span class="stat-label">RETRIEVED</span>
+            <span class="stat-value"><span id="score">0</span> 💩</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">ROUND</span>
+            <span class="stat-value"><span id="clock">90</span> s</span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">P50 CALL→THOUGHT <span class="dim">· target &lt; 1000 ms</span></span>
+            <span class="stat-value"><span id="p50">—</span><span class="unit" id="p50unit"></span></span>
+          </div>
+          <div class="stat stat-right">
+            <span class="stat-label">BACKENDS</span>
+            <span class="stat-value small" id="backends">…</span>
+          </div>
+        </div>
+      </header>
+
+      <section class="grid">
+        <figure class="fig apparatus">
+          <figcaption>
+            <span>FIG. 1 — CLAW APPARATUS, FLY SCALE 1:40</span>
+            <span class="status" id="implant-status">IMPLANT IDLE · CLICK MIC OR TYPE A CALL</span>
+          </figcaption>
+          <div class="pit-wrap">
+            <svg id="pit" class="pit" viewBox="0 0 1000 400" preserveAspectRatio="none" aria-label="claw machine"></svg>
+          </div>
+          <div class="bench">
+            <div class="bubble-anchor">
+              <div class="bubble" id="bubble" hidden>
+                <div class="bubble-opts" id="bubble-opts"></div>
+                <div class="bubble-tail"></div>
+              </div>
+              <div class="bubble bubble-idle" id="bubble-idle"><span>…</span><div class="bubble-tail"></div></div>
+            </div>
+            <svg id="fly" class="fly" viewBox="0 0 260 150" aria-label="JevGeni at the joystick"></svg>
+            <div class="plate">JEVGENI · ♀ · REV. 3</div>
+            <div class="caption" id="caption">JevGeni is at the joystick. Say something.</div>
+          </div>
+        </figure>
+
+        <aside class="fig meters">
+          <figcaption><span>FIG. 3 — WHAT THE FLY WANTS</span></figcaption>
+          <div class="meter" data-meter="signal">
+            <div class="meter-head"><b>Signal</b><span class="pct" id="signal-pct">100%</span></div>
+            <div class="bar"><div class="fill" id="signal-fill"></div></div>
+            <p>Implant quality. Falls with the claw's distance from the RX antenna, rises when you call short and clear. Decides whether a command arrives at all.</p>
+          </div>
+          <div class="meter" data-meter="hunger">
+            <div class="meter-head"><b>Hunger</b><span class="pct" id="hunger-pct">20%</span></div>
+            <div class="bar"><div class="fill" id="hunger-fill"></div></div>
+            <p>Rises over the round. Decides what your command must beat: the nearest temptation, or the one you named.</p>
+          </div>
+          <div class="meter" data-meter="startle">
+            <div class="meter-head"><b>Startle</b><span class="pct" id="startle-pct">0%</span></div>
+            <div class="bar"><div class="fill" id="startle-fill"></div></div>
+            <p>Loud calls make her flinch — the claw jerks the wrong way first. Decays.</p>
+          </div>
+          <div class="note">
+            Nothing is rolled. Every value is on the board — the run replays from seed + input log.
+            <span class="sig">— Dr. G., 03:40</span>
+          </div>
+        </aside>
+      </section>
+
+      <section class="fig uplink">
+        <figcaption>
+          <span>FIG. 2 — VOICE UPLINK (YOU ARE THE IMPLANT)</span>
+          <span id="chain-label">SIMULATED CHAIN · SEED <b id="seed-label">1337</b> · <b id="inputs-label">0</b> INPUTS</span>
+        </figcaption>
+        <div class="chips" id="chips">
+          <button data-call="JevGeni, left!">JevGeni, left!</button>
+          <button data-call="right!">right!</button>
+          <button data-call="down, now!">down, now!</button>
+          <button data-call="grab it">grab it</button>
+          <button data-call="wait…">wait…</button>
+          <button data-call="a bit left, then down">a bit left, then down</button>
+          <button data-call="get the wine">get the wine</button>
+          <button data-call="JevGeni, links! Jetzt runter!">JevGeni, links! Jetzt runter!</button>
+        </div>
+        <form class="callbar" id="callform">
+          <input id="calltext" type="text" placeholder='Type what you’d shout, e.g. “JevGeni, left, now!”' autocomplete="off" />
+          <label class="toggle"><input type="checkbox" id="loud" /> <span>LOUD</span></label>
+          <button type="submit" class="primary" id="callbtn">CALL</button>
+          <button type="button" id="micbtn" class="mic">🎙 MIC</button>
+          <button type="button" id="restart">RESTART</button>
+        </form>
+        <div class="uplink-foot">
+          <div class="level"><span>MIC</span><div class="level-bar"><div id="level-fill"></div></div><span id="level-db">—</span></div>
+          <div class="seed">
+            <label>SEED <input id="seed" type="number" value="1337" /></label>
+            <label>LANG
+              <select id="lang">
+                <option value="">auto</option>
+                <option value="en">en</option>
+                <option value="de">de</option>
+              </select>
+            </label>
+            <a id="replay-link" href="#" title="Link that replays this exact run">REPLAY LINK</a>
+            <span id="replay-badge" class="badge" hidden>REPLAYING</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="fig log">
+        <figcaption>
+          <span>FIG. 4 — HEARING PROTOCOL</span>
+          <span id="spend-label">SPEND — </span>
+        </figcaption>
+        <table>
+          <thead>
+            <tr>
+              <th>t</th>
+              <th>heard</th>
+              <th>understood</th>
+              <th>fly did</th>
+              <th class="num">stt</th>
+              <th class="num">jev</th>
+              <th class="num">call→thought</th>
+            </tr>
+          </thead>
+          <tbody id="log"></tbody>
+        </table>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
