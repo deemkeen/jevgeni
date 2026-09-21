@@ -22,10 +22,28 @@ export interface CallMeta {
   world: WorldSnapshot;
 }
 
+/** Optional access token: ?token=… in the URL once, then sessionStorage. */
+function tokenHeaders(): Record<string, string> {
+  try {
+    const u = new URL(location.href);
+    const fromUrl = u.searchParams.get("token");
+    if (fromUrl) {
+      sessionStorage.setItem("jevgeni_token", fromUrl);
+      u.searchParams.delete("token");
+      history.replaceState(null, "", u.toString());
+    }
+    const t = sessionStorage.getItem("jevgeni_token");
+    return t ? { "X-Token": t } : {};
+  } catch {
+    return {};
+  }
+}
+
 export async function postCall(wav: Blob, meta: CallMeta, onEvent: (e: VoiceEvent) => void): Promise<void> {
   const res = await fetch("/api/call", {
     method: "POST",
     headers: {
+      ...tokenHeaders(),
       "Content-Type": "audio/wav",
       "X-Meta": btoa(unescape(encodeURIComponent(JSON.stringify(meta)))),
     },
@@ -38,7 +56,7 @@ export async function postCall(wav: Blob, meta: CallMeta, onEvent: (e: VoiceEven
 export async function postInterpret(text: string, meta: CallMeta, onEvent: (e: VoiceEvent) => void): Promise<void> {
   const res = await fetch("/api/interpret", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { ...tokenHeaders(), "Content-Type": "application/json" },
     body: JSON.stringify({ text, ...meta }),
   });
   if (!res.ok) throw new Error(`interpret failed: ${res.status}`);
@@ -46,7 +64,8 @@ export async function postInterpret(text: string, meta: CallMeta, onEvent: (e: V
 }
 
 export async function fetchStatus(): Promise<{ jev: { road: string; model: string }; stt: string; spend: SpendLedger }> {
-  const res = await fetch("/api/status");
+  const res = await fetch("/api/status", { headers: tokenHeaders() });
+  if (res.status === 401) throw new Error("token required");
   return res.json();
 }
 

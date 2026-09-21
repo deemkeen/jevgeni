@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build:web",
+  "outputDirectory": "web/dist",
+  "functions": { "api/*.ts": { "maxDuration": 20, "memory": 1024 } }
+}

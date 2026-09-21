@@ -432,7 +432,11 @@ void fetchStatus()
     updateSpend();
     if (s.stt !== "groq") setStatus("busy", "NO GROQ_API_KEY ON THE SERVER · MIC WILL NOT WORK");
   })
-  .catch(() => ($("backends").textContent = "server unreachable"));
+  .catch((e) => {
+    const locked = String(e).includes("token");
+    $("backends").textContent = locked ? "locked: open with ?token=…" : "server unreachable";
+    if (locked) setStatus("busy", "LOCKED · OPEN THE LINK WITH ?token=…");
+  });
 
 // pause the round while the tab is hidden, so hunger doesn't run away
 document.addEventListener("visibilitychange", () => {

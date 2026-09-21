@@ -9,9 +9,10 @@
     "dev:server": "tsx watch server/src/index.ts",
     "dev:web": "vite --config web/vite.config.ts",
     "build": "tsc -p server/tsconfig.json && vite build --config web/vite.config.ts",
+    "build:web": "vite build --config web/vite.config.ts",
     "start": "node server/dist/server/src/index.js",
     "test": "node --import tsx --test server/src/**/*.test.ts web/src/**/*.test.ts",
-    "typecheck": "tsc -p server/tsconfig.json --noEmit && tsc -p web/tsconfig.json --noEmit"
+    "typecheck": "tsc -p server/tsconfig.json --noEmit && tsc -p web/tsconfig.json --noEmit && tsc -p api/tsconfig.json --noEmit"
   },
   "engines": { "node": ">=20" },
   "devDependencies": {
