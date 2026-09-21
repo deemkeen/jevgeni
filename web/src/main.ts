@@ -279,7 +279,9 @@ async function submit(kind: "typed" | "wav", payload: string | Blob, loud: boole
       applyCall({ t: sim.t, text: heardText, loud, decision }, { sttMs, jevMs, latencyMs: latency }, { text: heardText, source: heardSource });
     }
   } catch (err) {
-    addErrorRow(heardText, String(err));
+    const msg = err instanceof Error ? err.message : String(err);
+    addErrorRow(heardText || (kind === "wav" ? "(audio)" : ""), msg);
+    if (msg.startsWith("locked")) setStatus("busy", "LOCKED · OPEN THE LINK WITH ?token=…");
   } finally {
     inFlight--;
     updateSpend();
@@ -436,6 +438,7 @@ void fetchStatus()
     const locked = String(e).includes("token");
     $("backends").textContent = locked ? "locked: open with ?token=…" : "server unreachable";
     if (locked) setStatus("busy", "LOCKED · OPEN THE LINK WITH ?token=…");
+    micBtn.disabled = locked;
   });
 
 // pause the round while the tab is hidden, so hunger doesn't run away

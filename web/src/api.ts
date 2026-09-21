@@ -22,17 +22,17 @@ export interface CallMeta {
   world: WorldSnapshot;
 }
 
-/** Optional access token: ?token=… in the URL once, then sessionStorage. */
+/** Optional access token: ?token=… in the URL once, then localStorage (survives tabs and restarts). */
 function tokenHeaders(): Record<string, string> {
   try {
     const u = new URL(location.href);
     const fromUrl = u.searchParams.get("token");
     if (fromUrl) {
-      sessionStorage.setItem("jevgeni_token", fromUrl);
+      localStorage.setItem("jevgeni_token", fromUrl);
       u.searchParams.delete("token");
       history.replaceState(null, "", u.toString());
     }
-    const t = sessionStorage.getItem("jevgeni_token");
+    const t = localStorage.getItem("jevgeni_token");
     return t ? { "X-Token": t } : {};
   } catch {
     return {};
@@ -49,8 +49,14 @@ export async function postCall(wav: Blob, meta: CallMeta, onEvent: (e: VoiceEven
     },
     body: wav,
   });
-  if (!res.ok) throw new Error(`call failed: ${res.status}`);
+  if (!res.ok) throw new Error(httpMessage(res.status));
   await readStream(res, onEvent);
+}
+
+function httpMessage(status: number): string {
+  if (status === 401) return "locked: open the page once with ?token=… (the token is kept in this browser)";
+  if (status === 413) return "recording too long for one call";
+  return `call failed: HTTP ${status}`;
 }
 
 export async function postInterpret(text: string, meta: CallMeta, onEvent: (e: VoiceEvent) => void): Promise<void> {
@@ -59,7 +65,7 @@ export async function postInterpret(text: string, meta: CallMeta, onEvent: (e: V
     headers: { ...tokenHeaders(), "Content-Type": "application/json" },
     body: JSON.stringify({ text, ...meta }),
   });
-  if (!res.ok) throw new Error(`interpret failed: ${res.status}`);
+  if (!res.ok) throw new Error(httpMessage(res.status));
   await readStream(res, onEvent);
 }
 
