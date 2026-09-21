@@ -85,7 +85,7 @@ function render(now: number) {
   $("inputs-label").textContent = String(replayLog ? replayLog.calls.length : inputLog.calls.length);
   if (sim.over) {
     $("caption").textContent = `Round over. ${sim.score.dung} 💩 retrieved, ${sim.score.wrong} snacks eaten.`;
-    status.textContent = "ROUND OVER · RESTART FOR ANOTHER";
+    status.textContent = "ROUND OVER · ↺ FOR ANOTHER";
     status.className = "status";
   }
 }
@@ -142,7 +142,7 @@ function captionFor(s: SimState): string {
     case "miss":
       return "Empty claw. Try again.";
     default:
-      return "JevGeni is at the joystick. Say something.";
+      return "Say something.";
   }
 }
 
@@ -193,20 +193,19 @@ function addLogRow(call: Omit<CallEvent, "type">, timing: CallTiming, heard: { t
       .join(" · ");
   const tr = document.createElement("tr");
   const lat = timing.latencyMs;
+  const parts = [timing.sttMs ? `stt ${timing.sttMs}` : "", timing.jevMs ? `jev ${timing.jevMs}` : ""].filter(Boolean).join(" · ");
   tr.innerHTML = `
-    <td>${(call.t / 1000).toFixed(1)}s</td>
+    <td class="t">${(call.t / 1000).toFixed(0)}s</td>
     <td class="heard">“${escapeHtml(heard.text)}”${call.loud ? " 📢" : ""}<span class="src">${heard.source}</span></td>
-    <td class="u">${top(d.command.probabilities)}<br>bait: ${top(d.temptation.probabilities, 1)} · ${d.urgency.level}<span class="src">${d.source} ${d.model}</span></td>
+    <td class="u">${top(d.command.probabilities)} · bait ${top(d.temptation.probabilities, 1)} · ${d.urgency.level}</td>
     <td class="did">${escapeHtml(sim.lastAction ?? "")}</td>
-    <td class="num">${timing.sttMs ? timing.sttMs + " ms" : "—"}</td>
-    <td class="num">${timing.jevMs ? timing.jevMs + " ms" : "—"}</td>
-    <td class="num ${lat == null ? "" : lat < 1000 ? "fast" : "slow"}">${lat == null ? "—" : lat + " ms"}</td>`;
+    <td class="num ${lat == null ? "" : lat < 1000 ? "fast" : "slow"}">${lat == null ? "—" : lat + " ms"}<span class="src">${parts}</span></td>`;
   logBody.prepend(tr);
 }
 
 function addErrorRow(text: string, msg: string) {
   const tr = document.createElement("tr");
-  tr.innerHTML = `<td>${(sim.t / 1000).toFixed(1)}s</td><td class="heard">“${escapeHtml(text)}”</td><td class="err" colspan="5">${escapeHtml(msg)}</td>`;
+  tr.innerHTML = `<td class="t">${(sim.t / 1000).toFixed(0)}s</td><td class="heard">“${escapeHtml(text)}”</td><td class="err" colspan="3">${escapeHtml(msg)}</td>`;
   logBody.prepend(tr);
 }
 
@@ -261,7 +260,7 @@ async function submit(kind: "typed" | "wav", payload: string | Blob, loud: boole
   } finally {
     inFlight--;
     updateSpend();
-    if (inFlight === 0) setStatus(mic ? "live" : "", mic ? "IMPLANT LIVE · LISTENING" : "IMPLANT IDLE · CLICK MIC OR TYPE A CALL");
+    if (inFlight === 0) setStatus(mic ? "live" : "", mic ? "IMPLANT LIVE · LISTENING" : "IMPLANT IDLE · TAP MIC OR TYPE");
   }
 }
 
@@ -306,8 +305,8 @@ micBtn.addEventListener("click", async () => {
     mic = null;
     vad = null;
     micBtn.classList.remove("live");
-    micBtn.textContent = "🎙 MIC";
-    setStatus("", "IMPLANT IDLE · CLICK MIC OR TYPE A CALL");
+    micBtn.textContent = "🎙";
+    setStatus("", "IMPLANT IDLE · TAP MIC OR TYPE");
     return;
   }
   try {
@@ -340,7 +339,7 @@ micBtn.addEventListener("click", async () => {
       },
     );
     micBtn.classList.add("live");
-    micBtn.textContent = "🎙 LIVE";
+    micBtn.textContent = "🎙";
     setStatus("live", "CALIBRATING · STAY QUIET 1.5 s");
   } catch (err) {
     addErrorRow("(mic)", String(err));
