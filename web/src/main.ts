@@ -2,6 +2,7 @@ import { fetchStatus, postCall, postInterpret, type SpendLedger, type VoiceEvent
 import { openMic, type Mic } from "./audio/mic";
 import { DEFAULT_VAD, Vad, type Utterance } from "./audio/vad";
 import { encodeWav } from "./audio/wav";
+import { buzz, click, isMuted, motorHum, setMuted, unlockAudio, type BuzzKind } from "./audio/buzz";
 import { median, percentile, rmsDb } from "./audio/features";
 import { renderClaw } from "./rig/claw";
 import { renderFly } from "./rig/fly";
@@ -72,7 +73,27 @@ function frame(now: number) {
 }
 requestAnimationFrame(frame);
 
+let lastMood = "idle";
+let lastPhase = "idle";
+function soundHooks() {
+  if (sim.fly.mood !== lastMood) {
+    lastMood = sim.fly.mood;
+    const k = lastMood as BuzzKind;
+    if (["obeys", "tempted", "startled", "win", "yum", "miss", "static"].includes(k)) buzz(k);
+  }
+  if (sim.claw.phase !== lastPhase) {
+    const from = lastPhase;
+    lastPhase = sim.claw.phase;
+    if (lastPhase === "moving") click("stick");
+    if (lastPhase === "descending" && from !== "moving") click("stick");
+    if (lastPhase === "grabbing") click("clack");
+    if (lastPhase === "rising" && from === "grabbing" && sim.claw.holding) click("clack");
+    motorHum(lastPhase === "moving" || lastPhase === "descending" || lastPhase === "rising");
+  }
+}
+
 function render(now: number) {
+  soundHooks();
   renderClaw(pitSvg, sim, camClock(sim.t));
   renderFly(flySvg, sim, now);
   $("score").textContent = String(sim.score.dung);
@@ -296,7 +317,10 @@ function stopMic() {
   setStatus("", "IMPLANT IDLE · TAP THE MIC");
 }
 
+document.addEventListener("pointerdown", () => unlockAudio(), { once: true });
+
 micBtn.addEventListener("click", async () => {
+  unlockAudio();
   if (sim.over) {
     restart();
     return;
@@ -318,6 +342,7 @@ micBtn.addEventListener("click", async () => {
           vad?.setVoice(noise + 22);
           calibrating = null;
           setStatus("live", `IMPLANT LIVE · LISTENING (noise ${Math.round(noise)} dB)`);
+          buzz("hello");
         }
         return;
       }
@@ -355,6 +380,10 @@ function levelMeter(db: number) {
 
 // ---------------------------------------------------------------------------
 // Restart / seed / replay link
+
+const soundBox = $<HTMLInputElement>("sound");
+soundBox.checked = !isMuted();
+soundBox.addEventListener("change", () => setMuted(!soundBox.checked));
 
 function restart() {
   const u = new URL(location.href);

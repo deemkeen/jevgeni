@@ -476,6 +476,15 @@ h1 em {
 .lab a {
   color: var(--green);
 }
+.lab .check {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+.lab .check input {
+  margin: 0;
+}
 .lab .ghost {
   background: transparent;
   border: 1px solid var(--ink-dim);
