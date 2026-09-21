@@ -4,3 +4,6 @@ server/dist/
 web/dist/
 .env
 *.log
+.vercel
+.env*
+.env.local
